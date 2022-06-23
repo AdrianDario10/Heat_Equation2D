@@ -16,7 +16,7 @@ class GradientLayer(tf.keras.layers.Layer):
         self.model = model
         super().__init__(**kwargs)
 
-    def call(self, tx):
+    def call(self, txy):
         """
         Computing 1st and 2nd derivatives for the heat equation.
         Args:
@@ -30,15 +30,17 @@ class GradientLayer(tf.keras.layers.Layer):
         """
 
         with tf.GradientTape() as g:
-            g.watch(tx)
+            g.watch(txy)
             with tf.GradientTape() as gg:
-                gg.watch(tx)
-                u = self.model(tx)
-            du_dtx = gg.batch_jacobian(u, tx)
-            du_dt = du_dtx[..., 0]
-            du_dx = du_dtx[..., 1]
-        d2u_dtx2 = g.batch_jacobian(du_dtx, tx)
-        d2u_dt2 = d2u_dtx2[..., 0, 0]
-        d2u_dx2 = d2u_dtx2[..., 1, 1]
+                gg.watch(txy)
+                u = self.model(txy)
+            du_dtxy = gg.batch_jacobian(u, txy)
+            du_dt = du_dtxy[..., 0]
+            du_dx = du_dtxy[..., 1]
+            du_dy = du_dtxy[..., 2]
+        d2u_dtxy2 = g.batch_jacobian(du_dtxy, txy)
+        d2u_dt2 = d2u_dtxy2[..., 0, 0]
+        d2u_dx2 = d2u_dtxy2[..., 1, 1]
+        d2u_dy2 = d2u_dtxy2[..., 2, 2]
 
-        return u, du_dt, du_dx, d2u_dt2, d2u_dx2
+        return u, du_dt, du_dx, du_dy, d2u_dt2, d2u_dx2, d2u_dy2
